@@ -1,0 +1,241 @@
+/* Holographic boot screen shown while the desktop backend starts. */
+
+.hud {
+  --hud-c: #5ee7ff;
+  --hud-c2: #9ff4ff;
+  --hud-dim: rgba(94, 231, 255, 0.4);
+  --hud-faint: rgba(94, 231, 255, 0.12);
+  --hud-ok: #7dffb2;
+  --hud-err: #ff7a8a;
+  --hud-mono: 'Cascadia Mono', Consolas, 'SF Mono', ui-monospace, monospace;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #02070b;
+  color: var(--hud-c);
+  font-family: var(--hud-mono);
+  z-index: 50;
+}
+
+.hud-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 50%, rgba(40, 140, 170, 0.22), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 55%, #000 100%);
+}
+.hud-particles { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hud-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(94, 231, 255, 0.06) 2px 3px);
+}
+
+/* ---------- central core ---------- */
+.hud-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(58vmin, 540px);
+  aspect-ratio: 1;
+  margin-top: -3vmin;
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  filter: drop-shadow(0 0 12px rgba(94, 231, 255, 0.55));
+  animation: hud-core-in 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards;
+}
+.hud-core svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+@keyframes hud-core-in { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+.hud-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: hud-draw 1.6s ease-out forwards; }
+@keyframes hud-draw { to { stroke-dashoffset: 0; } }
+
+.hud-label {
+  position: absolute;
+  left: 50%;
+  bottom: -12%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  animation: hud-fade 0.8s ease 1.2s forwards;
+}
+.hud-label h1 {
+  font: 600 clamp(18px, 2.6vmin, 30px) / 1 var(--hud-mono);
+  letter-spacing: 0.55em;
+  margin-right: -0.55em;
+  color: var(--hud-c2);
+  text-shadow: 0 0 14px rgba(94, 231, 255, 0.8);
+}
+.hud-label p { margin-top: 0.7em; font-size: 11px; letter-spacing: 0.3em; color: var(--hud-dim); }
+
+/* ---------- panels ---------- */
+.hud-panel {
+  position: absolute;
+  padding: 14px 16px;
+  font-size: 10.5px;
+  line-height: 1.55;
+  border: 1px solid var(--hud-dim);
+  border-radius: 6px;
+  background: linear-gradient(160deg, rgba(20, 80, 100, 0.22), rgba(4, 20, 28, 0.35));
+  box-shadow: 0 0 24px rgba(94, 231, 255, 0.12), inset 0 0 22px rgba(94, 231, 255, 0.06);
+  opacity: 0;
+  transform: translateY(10px) perspective(900px) rotateY(var(--ry, 0deg));
+  animation: hud-panel-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.hud-panel::before,
+.hud-panel::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--hud-c);
+}
+.hud-panel::before { top: -3px; left: -3px; border-right: 0; border-bottom: 0; }
+.hud-panel::after { bottom: -3px; right: -3px; border-left: 0; border-top: 0; }
+@keyframes hud-panel-in {
+  to { opacity: 1; transform: translateY(0) perspective(900px) rotateY(var(--ry, 0deg)); }
+}
+.hud-panel h3 { font-size: 10px; letter-spacing: 0.25em; color: var(--hud-c2); margin-bottom: 8px; font-weight: 600; }
+.hud-muted { color: var(--hud-dim); }
+.hud-ok { color: var(--hud-ok); text-shadow: 0 0 8px rgba(125, 255, 178, 0.5); }
+.hud-err { color: var(--hud-err); }
+
+.hud-p-sys { left: 6vw; top: 9vh; width: 300px; --ry: 14deg; animation-delay: 0.8s; }
+.hud-p-engine { left: 50%; top: 4vh; width: 340px; margin-left: -170px; animation-delay: 1s; }
+.hud-p-mem { right: 6vw; top: 14vh; width: 250px; --ry: -14deg; animation-delay: 1.2s; }
+.hud-p-log { left: 5vw; bottom: 7vh; width: 360px; --ry: 12deg; animation-delay: 1.4s; }
+.hud-p-voice { right: 6vw; bottom: 9vh; width: 250px; --ry: -12deg; animation-delay: 1.6s; }
+
+.hud-row { display: flex; justify-content: space-between; gap: 10px; }
+.hud-row b { color: var(--hud-c2); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-row b.hud-ok { color: var(--hud-ok); }
+.hud-row b.hud-err { color: var(--hud-err); }
+
+.hud-gauges { display: flex; gap: 14px; align-items: center; }
+.hud-gauge { width: 54px; height: 54px; flex: none; }
+.hud-gauge circle { fill: none; stroke-width: 5; }
+.hud-gauge .track { stroke: var(--hud-faint); }
+.hud-gauge .val {
+  stroke: var(--hud-c);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 27px 27px;
+  transition: stroke-dasharray 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hud-gauge text { fill: var(--hud-c2); font: 600 11px var(--hud-mono); text-anchor: middle; dominant-baseline: central; }
+.hud-bars { display: flex; align-items: flex-end; gap: 3px; height: 54px; flex: 1; }
+.hud-bars i {
+  flex: 1;
+  background: linear-gradient(var(--hud-c2), var(--hud-c));
+  opacity: 0.85;
+  box-shadow: 0 0 6px rgba(94, 231, 255, 0.5);
+  transition: height 0.5s ease;
+}
+
+.hud-hexes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 8px; }
+.hud-hexes i {
+  aspect-ratio: 1;
+  clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%);
+  background: var(--hud-faint);
+  transition: background 0.3s;
+}
+.hud-hexes i.on { background: var(--hud-c); }
+
+.hud-log { height: 118px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.hud-log div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-log .t { color: var(--hud-dim); margin-right: 8px; }
+
+.hud-wave { width: 100%; height: 64px; display: block; }
+
+/* ---------- progress + overlay ---------- */
+.hud-progress {
+  position: absolute;
+  left: 50%;
+  bottom: 3.2vh;
+  transform: translateX(-50%);
+  width: min(420px, 60vw);
+  opacity: 0;
+  animation: hud-fade 0.6s ease 1s forwards;
+}
+.hud-progress .track { height: 2px; background: var(--hud-faint); position: relative; overflow: hidden; }
+.hud-progress .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--hud-c);
+  box-shadow: 0 0 10px var(--hud-c);
+  transition: width 0.25s linear;
+}
+.hud-progress .meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--hud-dim);
+}
+.hud-progress .meta b { color: var(--hud-c2); font-weight: 600; }
+
+/* errors and recovery controls float above the progress bar */
+.hud-overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 9vh;
+  transform: translateX(-50%);
+  width: min(460px, 70vw);
+  z-index: 2;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+.hud-error {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 122, 138, 0.45);
+  border-radius: 6px;
+  background: rgba(40, 6, 12, 0.75);
+  color: var(--hud-err);
+  font-size: 12.5px;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* recovery button keeps the HUD palette regardless of the app theme */
+.hud-overlay button {
+  color: var(--hud-c2) !important;
+  background: rgba(4, 20, 28, 0.75) !important;
+  border: 1px solid var(--hud-dim) !important;
+  border-radius: 6px !important;
+  font-family: var(--hud-mono);
+  letter-spacing: 0.08em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.hud-overlay button:not(:disabled):hover {
+  border-color: var(--hud-c) !important;
+  box-shadow: 0 0 14px rgba(94, 231, 255, 0.35);
+}
+
+@keyframes hud-fade { to { opacity: 1; } }
+
+.hud-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(160, 245, 255, 0.55), transparent 60%);
+}
+.hud.is-ready .hud-flash { animation: hud-flash 1.1s ease-out; }
+@keyframes hud-flash { 15% { opacity: 1; } 100% { opacity: 0; } }
+.hud.is-exit > * { transition: opacity 0.7s ease, transform 0.7s ease; opacity: 0 !important; }
+.hud.is-exit .hud-core { transform: translate(-50%, -50%) scale(1.35) !important; }
+
+@media (max-width: 1000px) {
+  .hud-p-mem, .hud-p-voice { display: none; }
+  .hud-p-sys, .hud-p-log { --ry: 0deg; }
+}
+@media (max-height: 640px) {
+  .hud-p-engine { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud *, .hud *::before, .hud *::after { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+}
