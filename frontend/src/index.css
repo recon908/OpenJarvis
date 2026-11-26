@@ -475,9 +475,35 @@
     pointer-events: none;
     z-index: 0;
     background-image:
-      radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 42%),
-      radial-gradient(circle at 85% 110%, color-mix(in srgb, var(--color-accent-purple) 8%, transparent), transparent 46%),
-      linear-gradient(to bottom, transparent, transparent);
+      radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--color-accent) var(--hud-glow-a, 10%), transparent), transparent 42%),
+      radial-gradient(circle at 85% 110%, color-mix(in srgb, var(--color-accent-purple) var(--hud-glow-b, 8%), transparent), transparent 46%),
+      var(--hud-base, linear-gradient(to bottom, transparent, transparent));
+    box-shadow: var(--hud-vignette, none);
+  }
+
+  /* Dark theme: full Jarvis HUD — deep navy field, cyan grid, scanlines, vignette */
+  .dark .hud-backdrop {
+    --hud-glow-a: 22%;
+    --hud-glow-b: 16%;
+    --hud-grid: rgba(34, 211, 238, 0.09);
+    --hud-grid-opacity: 1;
+    --hud-base:
+      repeating-linear-gradient(0deg, rgba(34, 211, 238, 0.025) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 35%, #0c1c28 0%, #08111a 55%, #05080c 100%);
+    --hud-vignette: inset 0 0 180px rgba(0, 0, 0, 0.85);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) .hud-backdrop {
+      --hud-glow-a: 22%;
+      --hud-glow-b: 16%;
+      --hud-grid: rgba(34, 211, 238, 0.09);
+      --hud-grid-opacity: 1;
+      --hud-base:
+        repeating-linear-gradient(0deg, rgba(34, 211, 238, 0.025) 0 1px, transparent 1px 3px),
+        radial-gradient(ellipse at 50% 35%, #0c1c28 0%, #08111a 55%, #05080c 100%);
+      --hud-vignette: inset 0 0 180px rgba(0, 0, 0, 0.85);
+    }
   }
 
   .hud-backdrop::before {
@@ -485,12 +511,12 @@
     content: '';
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(var(--color-border-subtle) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color-border-subtle) 1px, transparent 1px);
+      linear-gradient(var(--hud-grid, var(--color-border-subtle)) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hud-grid, var(--color-border-subtle)) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
     -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
-    opacity: 0.45;
+    opacity: var(--hud-grid-opacity, 0.45);
   }
 
   .hud-backdrop::after {
