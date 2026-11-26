@@ -36,6 +36,7 @@ export interface AgentEvent {
 
 const CONVERSATIONS_KEY = 'openjarvis-conversations';
 const SETTINGS_KEY = 'openjarvis-settings';
+const DARK_HUD_MIGRATION_KEY = 'openjarvis-dark-hud-v1';
 const OPTIN_KEY = 'openjarvis-optin';
 const OPTIN_NAME_KEY = 'openjarvis-display-name';
 const OPTIN_EMAIL_KEY = 'openjarvis-email';
@@ -130,7 +131,17 @@ function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return defaults;
-    return { ...defaults, ...JSON.parse(raw) };
+    const settings: Settings = { ...defaults, ...JSON.parse(raw) };
+    // One-time switch to the dark HUD for installs that saved light/system
+    // before it became the default. Choosing light afterwards still sticks.
+    if (!localStorage.getItem(DARK_HUD_MIGRATION_KEY)) {
+      localStorage.setItem(DARK_HUD_MIGRATION_KEY, '1');
+      if (settings.theme !== 'dark') {
+        settings.theme = 'dark';
+        saveSettings(settings);
+      }
+    }
+    return settings;
   } catch {
     return defaults;
   }
