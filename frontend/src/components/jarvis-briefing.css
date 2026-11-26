@@ -83,6 +83,16 @@
   cursor: pointer;
 }
 .jb-enter:hover { background: rgba(94, 231, 255, 0.16); }
+.jb-voice.on { border-color: var(--warn); color: var(--warn); }
+.jb-warn-soft { color: var(--warn); opacity: 0.85; }
+
+/* Clock core pulses while Jarvis is speaking. */
+.jb-clock.is-speaking .jb-c-core { animation: jb-voice 0.9s ease-in-out infinite; }
+.jb-clock.is-speaking .jb-c-seg { opacity: 0.9; }
+@keyframes jb-voice {
+  0%, 100% { fill: rgba(10, 45, 60, 0.5); stroke-width: 1.6; }
+  50% { fill: rgba(60, 190, 230, 0.28); stroke-width: 3.2; }
+}
 
 /* ---------- layout ---------- */
 .jb-grid {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { fetchBriefing, saveBriefingState, type Briefing, type BriefingState, type CheckItem } from '../lib/briefing';
+import { composeBriefingSpeech, speakKorean, stopSpeaking, synthAvailable } from '../lib/briefing-voice';
 import './jarvis-briefing.css';
 
 const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
@@ -50,11 +51,11 @@ function Ring({ size, value, children }: { size: number; value: number; children
   );
 }
 
-function BigClock({ now, pending, next }: { now: Date; pending: number; next?: string }) {
+function BigClock({ now, pending, next, speaking }: { now: Date; pending: number; next?: string; speaking: boolean }) {
   const ticks = useMemo(() => Array.from({ length: 60 }, (_, i) => (i / 60) * Math.PI * 2), []);
   const sec = now.getSeconds();
   return (
-    <div className="jb-clock">
+    <div className={speaking ? 'jb-clock is-speaking' : 'jb-clock'}>
       <svg viewBox="-200 -200 400 400" aria-hidden="true">
         <circle r="192" className="jb-c-faint" />
         <g className="jb-spin-slow">
@@ -124,6 +125,10 @@ export function JarvisBriefing({ onClose }: { onClose: () => void }) {
   const [savedAt, setSavedAt] = useState<string>();
   const [saving, setSaving] = useState(false);
   const loadedId = useRef<string | undefined>(undefined);
+  const [loaded, setLoaded] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceBlocked, setVoiceBlocked] = useState(false);
+  const [autoVoice, setAutoVoice] = useState(() => localStorage.getItem('jb-auto-voice') !== '0');
 
   // Load on open and re-poll so a briefing Claude writes while the screen is up shows without a restart.
   useEffect(() => {
@@ -145,7 +150,8 @@ export function JarvisBriefing({ onClose }: { onClose: () => void }) {
             loadedId.current = id;
           }
         })
-        .catch(() => !cancelled && setLoadError(true));
+        .catch(() => !cancelled && setLoadError(true))
+        .finally(() => !cancelled && first && setLoaded(true));
     load(true);
     const t = setInterval(() => load(false), 60_000);
     return () => {
@@ -189,6 +195,62 @@ export function JarvisBriefing({ onClose }: { onClose: () => void }) {
   const handoverDone = handoverItems.filter(isDone).length;
   const dayPct = ((now.getHours() * 60 + now.getMinutes()) / 1440) * 100;
 
+  // ---------- voice ----------
+  const latest = useRef({ briefing, checks });
+  latest.current = { briefing, checks };
+
+  const speechRun = useRef(0);
+  const speakBriefing = useCallback(async () => {
+    const { briefing: b, checks: c } = latest.current;
+    const text = composeBriefingSpeech(b, new Date(), (i) => c[i.id] ?? !!i.done);
+    // A cancelled earlier utterance still fires its end event; only the newest one may clear the state.
+    const run = ++speechRun.current;
+    setSpeaking(true);
+    const ok = await speakKorean(text, { onEnd: () => run === speechRun.current && setSpeaking(false) });
+    if (run !== speechRun.current) return ok;
+    if (!ok) setSpeaking(false);
+    setVoiceBlocked(!ok);
+    return ok;
+  }, []);
+
+  // Greet once when the briefing first loads. Webviews may refuse speech before any
+  // user gesture; in that case the first click or key press starts it instead.
+  useEffect(() => {
+    if (!loaded || !autoVoice || !synthAvailable()) return;
+    let cancelled = false;
+    let retry: ((e: Event) => void) | null = null;
+    void speakBriefing().then((ok) => {
+      if (ok || cancelled) return;
+      retry = (e: Event) => {
+        // The voice buttons handle themselves; ENTER/Esc close the screen anyway.
+        if (e.target instanceof Element && e.target.closest('[data-voice-control]')) return;
+        window.removeEventListener('pointerdown', retry!);
+        window.removeEventListener('keydown', retry!);
+        void speakBriefing();
+      };
+      window.addEventListener('pointerdown', retry);
+      window.addEventListener('keydown', retry);
+    });
+    return () => {
+      cancelled = true;
+      if (retry) {
+        window.removeEventListener('pointerdown', retry);
+        window.removeEventListener('keydown', retry);
+      }
+    };
+    // Only the first load should greet; toggling AUTO later must not replay it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
+
+  useEffect(() => stopSpeaking, []);
+
+  const toggleAuto = () => {
+    const next = !autoVoice;
+    setAutoVoice(next);
+    localStorage.setItem('jb-auto-voice', next ? '1' : '0');
+    if (!next) stopSpeaking();
+  };
+
   return (
     <div className="jb" role="dialog" aria-label="Jarvis briefing">
       <div className="jb-bg" />
@@ -199,6 +261,30 @@ export function JarvisBriefing({ onClose }: { onClose: () => void }) {
           {loadError ? 'OFFLINE' : 'ONLINE'}
           {briefing?.updatedAt && <span>UPDATED {briefing.updatedAt}</span>}
           {briefing?.device && <span className="jb-muted">{briefing.device}</span>}
+          {synthAvailable() && (
+            <>
+              {voiceBlocked && !speaking && <span className="jb-warn-soft">클릭하면 브리핑을 읽어드립니다</span>}
+              <button
+                type="button"
+                data-voice-control
+                className={speaking ? 'jb-enter jb-voice on' : 'jb-enter jb-voice'}
+                onClick={() => (speaking ? (stopSpeaking(), setSpeaking(false)) : void speakBriefing())}
+                aria-label={speaking ? '읽기 정지' : '브리핑 듣기'}
+              >
+                {speaking ? '■ 정지' : '▶ 듣기'}
+              </button>
+              <button
+                type="button"
+                data-voice-control
+                className="jb-enter"
+                onClick={toggleAuto}
+                aria-pressed={autoVoice}
+                title="켤 때 자동으로 브리핑 읽기"
+              >
+                AUTO {autoVoice ? 'ON' : 'OFF'}
+              </button>
+            </>
+          )}
           <button type="button" className="jb-enter" onClick={onClose}>
             ENTER ▸
           </button>
@@ -281,7 +367,12 @@ export function JarvisBriefing({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="jb-col jb-center">
-          <BigClock now={now} pending={pending} next={briefing?.today?.next ?? briefing?.today?.headline} />
+          <BigClock
+            now={now}
+            pending={pending}
+            next={briefing?.today?.next ?? briefing?.today?.headline}
+            speaking={speaking}
+          />
 
           <Panel title="PRIORITY" caption={briefing?.priority?.caption ?? '지금 챙길 것'}>
             {priority.length ? (

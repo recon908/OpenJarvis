@@ -9,6 +9,8 @@ export interface Briefing {
   id?: string;
   updatedAt?: string;
   device?: string;
+  /** What Jarvis says aloud on launch. Omit to let the app compose it from the sections below. */
+  speech?: string;
   ledger?: {
     caption?: string;
     boxes?: { label: string; amount: string; sub?: string }[];
