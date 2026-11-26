@@ -1460,6 +1460,67 @@ async def server_info(request: Request):
     }
 
 
+_BRIEFING_FILE = "briefing.json"
+_BRIEFING_STATE_FILE = "briefing-state.json"
+
+
+def _read_json_file(path) -> Any:
+    import json
+
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError) as exc:
+        logging.getLogger("openjarvis.server").warning(
+            "Could not read %s: %s", path, exc
+        )
+        return None
+
+
+@router.get("/v1/briefing")
+async def get_briefing():
+    """Return the launch briefing and the user's saved checks and memo.
+
+    ``briefing.json`` is written by Claude when the user runs "자비스";
+    ``briefing-state.json`` holds what the user ticked and typed on the
+    dashboard so the next run can pick it up.
+    """
+    root = get_config_dir()
+    state = _read_json_file(root / _BRIEFING_STATE_FILE)
+    return {
+        "briefing": _read_json_file(root / _BRIEFING_FILE),
+        "state": state if isinstance(state, dict) else {},
+    }
+
+
+@router.put("/v1/briefing/state")
+async def put_briefing_state(request: Request):
+    """Persist dashboard checks and memo next to ``briefing.json``."""
+    import json
+    import time
+
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Expected a JSON object")
+    checks = body.get("checks", {})
+    memo = body.get("memo", "")
+    if not isinstance(checks, dict) or not isinstance(memo, str):
+        raise HTTPException(status_code=400, detail="Invalid briefing state")
+    state = {
+        "briefingId": str(body.get("briefingId", "")),
+        "checks": {str(k): bool(v) for k, v in checks.items()},
+        "memo": memo[:5000],
+        "savedAt": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
+    root = get_config_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    tmp = root / (_BRIEFING_STATE_FILE + ".tmp")
+    tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(root / _BRIEFING_STATE_FILE)
+    return {"status": "ok", "savedAt": state["savedAt"]}
+
+
 @router.get("/health")
 async def health(request: Request):
     """Health check endpoint."""

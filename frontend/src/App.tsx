@@ -10,6 +10,7 @@ import { DataSourcesPage } from './pages/DataSourcesPage';
 import { LogsPage } from './pages/LogsPage';
 import { CommandPalette } from './components/CommandPalette';
 import { SetupScreen } from './components/SetupScreen';
+import { JarvisBriefing } from './components/JarvisBriefing';
 import { Toaster } from './components/ui/sonner';
 import { useAppStore } from './lib/store';
 import { fetchModels, fetchServerInfo, fetchSavings, submitSavings, isTauri } from './lib/api';
@@ -20,6 +21,9 @@ import { offerAnalyticsChoice } from './lib/analytics-invitation';
 
 export default function App() {
   const [setupDone, setSetupDone] = useState(!isTauri());
+  // The launch briefing covers the app each time Jarvis opens; ENTER or Esc dismisses it.
+  const [briefingOpen, setBriefingOpen] = useState(true);
+  const closeBriefing = useCallback(() => setBriefingOpen(false), []);
   const handleSetupReady = useCallback(() => {
     setSetupDone(true);
     // Only fire once per install — guard against setup screen re-appearing
@@ -203,6 +207,7 @@ export default function App() {
         </Route>
       </Routes>
       <Toaster position="bottom-right" />
+      {briefingOpen && <JarvisBriefing onClose={closeBriefing} />}
       {commandPaletteOpen && <CommandPalette />}
       {optInModalOpen && (
         <OptInModal onClose={() => setOptInModalOpen(false)} />
