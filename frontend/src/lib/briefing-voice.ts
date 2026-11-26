@@ -40,6 +40,30 @@ export function composeBriefingSpeech(b: Briefing | null, now: Date, isDone: (i:
   return parts.join(' ');
 }
 
+/**
+ * The short spoken greeting for the launch card: time, how many things are
+ * pending and the first of them. Deliberately ignores `briefing.speech`,
+ * which is written for the full briefing screen.
+ */
+export function composeShortBriefingSpeech(b: Briefing | null, now: Date, isDone: (i: CheckItem) => boolean): string {
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const parts = [`${greeting(h)}. 자비스입니다. 지금은 ${h}시${m ? ` ${m}분` : ''}입니다.`];
+  if (!b) {
+    parts.push('아직 오늘 브리핑이 없습니다.');
+    return parts.join(' ');
+  }
+  const pending = (b.priority?.items ?? []).filter((i) => !isDone(i));
+  if (pending.length) {
+    parts.push(`오늘 챙길 일은 ${pending.length}건, 먼저 ${pending[0].title}입니다.`);
+  } else {
+    parts.push('지금 챙길 일은 모두 끝났습니다.');
+  }
+  return parts.join(' ');
+}
+
+export { greeting as briefingGreeting };
+
 function pickKoreanVoice(): SpeechSynthesisVoice | undefined {
   const ko = speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith('ko'));
   // Edge/WebView2 neural voices ("… Online (Natural)") sound far better than the legacy ones.

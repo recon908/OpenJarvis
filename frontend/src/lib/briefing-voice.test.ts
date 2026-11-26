@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { composeBriefingSpeech } from './briefing-voice';
+import { composeBriefingSpeech, composeShortBriefingSpeech } from './briefing-voice';
 import type { Briefing } from './briefing';
 
 const at = (h: number, m: number) => new Date(2026, 10, 26, h, m);
@@ -33,5 +33,31 @@ describe('composeBriefingSpeech', () => {
 
   it('says there is no briefing yet', () => {
     expect(composeBriefingSpeech(null, at(20, 0), () => false)).toContain('아직 오늘 브리핑이 없습니다');
+  });
+});
+
+describe('composeShortBriefingSpeech', () => {
+  it('names the count and only the first pending item', () => {
+    const b: Briefing = {
+      speech: '긴 브리핑 문장',
+      priority: {
+        items: [
+          { id: 'a', title: '방문', done: true },
+          { id: 'b', title: '출고' },
+          { id: 'c', title: '금리 소식' },
+        ],
+      },
+    };
+    const text = composeShortBriefingSpeech(b, at(9, 5), (i) => !!i.done);
+    expect(text).toBe('좋은 아침입니다. 자비스입니다. 지금은 9시 5분입니다. 오늘 챙길 일은 2건, 먼저 출고입니다.');
+  });
+
+  it('says everything is done', () => {
+    const b: Briefing = { priority: { items: [{ id: 'a', title: '출고' }] } };
+    expect(composeShortBriefingSpeech(b, at(14, 0), () => true)).toContain('모두 끝났습니다');
+  });
+
+  it('says there is no briefing yet', () => {
+    expect(composeShortBriefingSpeech(null, at(20, 0), () => false)).toContain('아직 오늘 브리핑이 없습니다');
   });
 });

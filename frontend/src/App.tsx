@@ -11,6 +11,7 @@ import { LogsPage } from './pages/LogsPage';
 import { CommandPalette } from './components/CommandPalette';
 import { SetupScreen } from './components/SetupScreen';
 import { JarvisBriefing } from './components/JarvisBriefing';
+import { QuickBriefing } from './components/QuickBriefing';
 import { Toaster } from './components/ui/sonner';
 import { useAppStore } from './lib/store';
 import { fetchModels, fetchServerInfo, fetchSavings, submitSavings, isTauri } from './lib/api';
@@ -21,9 +22,16 @@ import { offerAnalyticsChoice } from './lib/analytics-invitation';
 
 export default function App() {
   const [setupDone, setSetupDone] = useState(!isTauri());
-  // The launch briefing covers the app each time Jarvis opens; ENTER or Esc dismisses it.
-  const [briefingOpen, setBriefingOpen] = useState(true);
+  // Jarvis opens straight to the main screen with a short briefing card;
+  // its "자세히" button opens the full briefing screen.
+  const [quickBriefingOpen, setQuickBriefingOpen] = useState(true);
+  const closeQuickBriefing = useCallback(() => setQuickBriefingOpen(false), []);
+  const [briefingOpen, setBriefingOpen] = useState(false);
   const closeBriefing = useCallback(() => setBriefingOpen(false), []);
+  const openFullBriefing = useCallback(() => {
+    setQuickBriefingOpen(false);
+    setBriefingOpen(true);
+  }, []);
   const handleSetupReady = useCallback(() => {
     setSetupDone(true);
     // Only fire once per install — guard against setup screen re-appearing
@@ -207,6 +215,9 @@ export default function App() {
         </Route>
       </Routes>
       <Toaster position="bottom-right" />
+      {quickBriefingOpen && !briefingOpen && (
+        <QuickBriefing onOpenFull={openFullBriefing} onClose={closeQuickBriefing} />
+      )}
       {briefingOpen && <JarvisBriefing onClose={closeBriefing} />}
       {commandPaletteOpen && <CommandPalette />}
       {optInModalOpen && (

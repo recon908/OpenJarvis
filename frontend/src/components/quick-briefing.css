@@ -1,0 +1,97 @@
+/* Short launch briefing card shown over the main screen. */
+.qb {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 40;
+  width: min(420px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  padding: 14px 16px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg), 0 0 24px -6px var(--color-accent-glow);
+  color: var(--color-text);
+  font-size: 13px;
+  animation: qb-in 0.35s ease-out;
+}
+
+@keyframes qb-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.qb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.qb-title { color: var(--color-accent); font-weight: 600; }
+.qb-time { margin-left: auto; color: var(--color-text-secondary); letter-spacing: 0; }
+
+.qb-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.6;
+}
+.qb-dot.on { opacity: 1; animation: hud-heartbeat 1.6s ease-in-out infinite; }
+
+.qb-x {
+  margin-left: 4px;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.qb-x:hover { color: var(--color-text); }
+
+.qb-greet { margin: 10px 0 2px; font-size: 15px; font-weight: 600; }
+.qb-count { margin: 0 0 6px; }
+.qb-count b { color: var(--color-accent); }
+
+.qb-list { margin: 0 0 6px; padding: 0; list-style: none; }
+.qb-list li {
+  padding: 3px 0 3px 10px;
+  border-left: 2px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
+  margin-bottom: 3px;
+}
+
+.qb-tag {
+  margin-right: 6px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  color: var(--color-accent-amber);
+}
+
+.qb-next { margin: 4px 0 0; color: var(--color-text-secondary); }
+.qb-muted { margin: 4px 0; color: var(--color-text-secondary); }
+
+.qb-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+.qb-actions button {
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-hud);
+  font-size: 11px;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+.qb-actions button:hover { background: var(--color-accent-subtle); }
+
+@media (prefers-reduced-motion: reduce) {
+  .qb, .qb-dot.on { animation: none; }
+}
